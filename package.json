@@ -1,12 +1,16 @@
 {
   "name": "pokemonapp-react",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "main": "index.ts",
   "scripts": {
     "start": "expo start",
     "android": "expo start --android",
     "ios": "expo start --ios",
-    "web": "expo start --web"
+    "web": "expo start --web",
+    "check-typescript": "tsc --noEmit",
+    "check-eslint": "eslint './src/**/*{js,ts,jsx,tsx}'",
+    "lint": "npm run check-typescript && npm run check-eslint",
+    "release": "standard-version"
   },
   "dependencies": {
     "expo": "~52.0.41",
@@ -16,7 +20,12 @@
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",
+    "@trivago/prettier-plugin-sort-imports": "^5.2.2",
     "@types/react": "~18.3.12",
+    "eslint": "^8.57.0",
+    "eslint-config-expo": "~8.0.1",
+    "prettier": "^3.5.3",
+    "standard-version": "^9.5.0",
     "typescript": "^5.3.3"
   },
   "private": true

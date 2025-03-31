@@ -11,4 +11,9 @@ describe('App', () => {
     render(<App />)
     expect(() => screen.unmount()).not.toThrow()
   })
+
+  afterAll(() => {
+    jest.clearAllMocks();
+    jest.resetAllMocks();
+  });
 })

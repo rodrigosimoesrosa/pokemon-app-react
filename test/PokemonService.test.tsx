@@ -1,5 +1,5 @@
-import { PokemonService } from "src/data/network/PokemonService";
-import { logError } from "src/util/log";
+import { PokemonService } from "../src/data/network/PokemonService";
+import { logError } from "../src/util/log";
 
 jest.mock("expo", () => ({
   registerRootComponent: jest.fn(),

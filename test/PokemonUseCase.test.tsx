@@ -1,8 +1,8 @@
 import "reflect-metadata";
-import { PokemonUseCase } from "src/domain/usecase/PokemonUseCase";
-import type { IPokemonRepository } from "src/data/repository/IPokemonRepository";
-import { logError } from "src/util/log";
-import { Pokemon } from "src/domain/model/Pokemon";
+import { PokemonUseCase } from "../src/domain/usecase/PokemonUseCase";
+import type { IPokemonRepository } from "../src/data/repository/IPokemonRepository";
+import { logError } from "../src/util/log";
+import { Pokemon } from "../src/domain/model/Pokemon";
 
 jest.mock("src/util/log", () => ({
   logError: jest.fn(),

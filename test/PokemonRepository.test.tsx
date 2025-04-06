@@ -1,10 +1,9 @@
 import "reflect-metadata";
-import { PokemonRepository } from "src/data/repository/PokemonRepository";
-import { PokemonCache } from "src/data/cache/PokemonCache";
-import { PokemonService } from "src/data/network/PokemonService";
-import { getPokemonGeneration, getPokemonId, TOTAL } from "src/domain/usecase/PokemonConfig";
-import { logError } from "src/util/log";
-import { Pokemon } from "src/domain/model/Pokemon";
+import { PokemonRepository } from "../src/data/repository/PokemonRepository";
+import { PokemonCache } from "../src/data/cache/PokemonCache";
+import { PokemonService } from "../src/data/network/PokemonService";
+import { getPokemonGeneration, getPokemonId } from "../src/domain/usecase/PokemonConfig";
+import { logError } from "../src/util/log";
 
 jest.mock("src/data/cache/PokemonCache");
 jest.mock("src/data/network/PokemonService");

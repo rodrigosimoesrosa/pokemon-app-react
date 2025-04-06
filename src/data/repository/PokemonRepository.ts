@@ -3,36 +3,57 @@ import { injectable } from "inversify";
 import { PokemonCache } from "src/data/cache/PokemonCache";
 import { PokemonService } from "src/data/network/PokemonService";
 import { IPokemonRepository } from "src/data/repository/IPokemonRepository";
+import { logError } from "src/util/log";
+import { Pokemon } from "src/domain/model/Pokemon";
+import { getPokemonGeneration, getPokemonId, TOTAL } from "src/domain/usecase/PokemonConfig";
 
 @injectable()
 export class PokemonRepository implements IPokemonRepository {
     
-  getPokemons = async (limit: number = 151) => {
-    let localPokemons = await PokemonCache.getPokemons() || {};
-    let remotePokemons = await PokemonService.fetchPokemons(limit) || [];
-    
-    remotePokemons.forEach((pokemon) => {
-      let cachedPokemon = localPokemons[pokemon.name];
-      if (cachedPokemon) {
-        pokemon.image = cachedPokemon.image;
-        pokemon.height = cachedPokemon.height;
-        pokemon.weight = cachedPokemon.weight;
-        pokemon.types = cachedPokemon.types;
-      }
-    });
-    
-    return remotePokemons;
+  getPokemons = async (): Promise<Pokemon[]> => {
+    try {
+      const localPokemons = (await PokemonCache.getPokemons()) || {};
+      const remotePokemons = (await PokemonService.fetchPokemons(TOTAL)) || [];
+
+      return remotePokemons.map((pokemon) => {
+        const id = getPokemonId(pokemon.url);
+        const cached = localPokemons[pokemon.name];
+        if (cached) {
+          return {
+            ...pokemon,
+            image: cached.image,
+            height: cached.height,
+            weight: cached.weight,
+            types: cached.types,
+            id: id,
+            generation: getPokemonGeneration(id),
+          };
+        } else {
+          return {
+            ...pokemon,
+            id: id,
+            generation: getPokemonGeneration(id),
+          } as Pokemon;
+        }
+      });
+    } catch (error) {
+      logError(`Error in getPokemons: ${error}`);
+      throw new Error('Failed to fetch pokemons');
+    }
   };
 
   getPokemonDetails = async (name: string) => {
-    const localPokemon = await PokemonCache.getPokemon(name);
-    if (localPokemon) return localPokemon;
-
-    let remotePokemon = await PokemonService.fetchPokemonDetails(name);
-    if (remotePokemon) {
-      await PokemonCache.savePokemon(name, remotePokemon);
+    try {
+      const local = await PokemonCache.getPokemon(name);
+      if (local) return local;
+  
+      const remote = await PokemonService.fetchPokemonDetails(name);
+      if (remote) await PokemonCache.savePokemon(name, remote);
+      
+      return remote;
+    } catch (error) {
+      logError(`Error fetching Pokémon details: ${error}`);
+      throw error;
     }
-    
-    return remotePokemon;
   };
 }

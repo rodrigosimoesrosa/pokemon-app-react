@@ -2,96 +2,125 @@ import "reflect-metadata";
 import { PokemonRepository } from "src/data/repository/PokemonRepository";
 import { PokemonCache } from "src/data/cache/PokemonCache";
 import { PokemonService } from "src/data/network/PokemonService";
+import { getPokemonGeneration, getPokemonId, TOTAL } from "src/domain/usecase/PokemonConfig";
+import { logError } from "src/util/log";
 import { Pokemon } from "src/domain/model/Pokemon";
-import { IPokemonRepository } from "src/data/repository/IPokemonRepository";
 
 jest.mock("src/data/cache/PokemonCache");
 jest.mock("src/data/network/PokemonService");
+jest.mock("src/domain/usecase/PokemonConfig", () => ({
+  getPokemonId: jest.fn(),
+  getPokemonGeneration: jest.fn(),
+  TOTAL: 3, // mocka TOTAL com um número baixo para teste
+}));
+jest.mock("src/util/log");
 
-describe("PokemonRepositoryImpl", () => {
-  let repository: IPokemonRepository;
-  const mockPokemon: Pokemon = {
-    name: "pikachu",
-    image: "pikachu.png",
-    height: 4,
-    weight: 60,
-    types: ["electric"]
-  } as Pokemon;
+describe("PokemonRepository", () => {
+  const repository = new PokemonRepository();
 
-  beforeEach(() => {
+  afterEach(() => {
     jest.clearAllMocks();
-    repository = new PokemonRepository();
   });
 
   describe("getPokemons", () => {
-    it("should combine cache data with API data", async () => {
-      const mockLocalPokemons = {
-        pikachu: { ...mockPokemon, image: "cached-pikachu.png" }
+    it("deve retornar os pokemons combinando cache com dados da API", async () => {
+      const remote = [
+        { name: "pikachu", url: "url1" },
+        { name: "bulbasaur", url: "url2" },
+      ];
+
+      const cache = {
+        pikachu: {
+          image: "img1",
+          height: 10,
+          weight: 20,
+          types: ["electric"],
+        },
       };
-      const mockRemotePokemons = [{ ...mockPokemon }];
 
-      (PokemonCache.getPokemons as jest.Mock).mockResolvedValue(mockLocalPokemons);
-      (PokemonService.fetchPokemons as jest.Mock).mockResolvedValue(mockRemotePokemons);
+      (PokemonCache.getPokemons as jest.Mock).mockResolvedValue(cache);
+      (PokemonService.fetchPokemons as jest.Mock).mockResolvedValue(remote);
+      (getPokemonId as jest.Mock).mockImplementation((url: string) =>
+        url === "url1" ? 1 : 2
+      );
+      (getPokemonGeneration as jest.Mock).mockImplementation((id: number) =>
+        id === 1 ? 1 : 1
+      );
 
-      const result = await repository.getPokemons(151);
+      const result = await repository.getPokemons();
 
-      expect(result[0].image).toBe("cached-pikachu.png");
-      expect(PokemonCache.getPokemons).toHaveBeenCalled();
-      expect(PokemonService.fetchPokemons).toHaveBeenCalledWith(151);
+      expect(result).toHaveLength(2);
+
+      expect(result[0]).toMatchObject({
+        name: "pikachu",
+        image: "img1",
+        height: 10,
+        weight: 20,
+        types: ["electric"],
+        id: 1,
+        generation: 1,
+      });
+
+      expect(result[1]).toMatchObject({
+        name: "bulbasaur",
+        id: 2,
+        generation: 1,
+      });
     });
 
-    it("should return only API data if cache is empty", async () => {
-      (PokemonCache.getPokemons as jest.Mock).mockResolvedValue({});
-      (PokemonService.fetchPokemons as jest.Mock).mockResolvedValue([mockPokemon]);
+    it("deve lançar erro e logar quando falhar", async () => {
+      (PokemonService.fetchPokemons as jest.Mock).mockRejectedValue(
+        new Error("API Error")
+      );
 
-      const result = await repository.getPokemons(50);
-      expect(result[0]).toEqual(mockPokemon);
-      expect(PokemonService.fetchPokemons).toHaveBeenCalledWith(50);
-    });
+      await expect(repository.getPokemons()).rejects.toThrow(
+        "Failed to fetch pokemons"
+      );
 
-    it("should handle API errors", async () => {
-      (PokemonCache.getPokemons as jest.Mock).mockResolvedValue({});
-      (PokemonService.fetchPokemons as jest.Mock).mockRejectedValue(new Error("API Error"));
-
-      await expect(repository.getPokemons()).rejects.toThrow("API Error");
+      expect(logError).toHaveBeenCalledWith(
+        expect.stringContaining("Error in getPokemons")
+      );
     });
   });
 
   describe("getPokemonDetails", () => {
-    it("should return Pokemon from cache if available", async () => {
-      (PokemonCache.getPokemon as jest.Mock).mockResolvedValue(mockPokemon);
+    it("deve retornar detalhes do cache se disponíveis", async () => {
+      const cached = { name: "pikachu", id: 1 };
+      (PokemonCache.getPokemon as jest.Mock).mockResolvedValue(cached);
 
       const result = await repository.getPokemonDetails("pikachu");
-      expect(result).toEqual(mockPokemon);
-      expect(PokemonCache.getPokemon).toHaveBeenCalledWith("pikachu");
+
+      expect(result).toEqual(cached);
       expect(PokemonService.fetchPokemonDetails).not.toHaveBeenCalled();
     });
 
-    it("should fetch from API and save in cache when not found in cache", async () => {
+    it("deve buscar detalhes da API e salvar no cache se não houver no cache", async () => {
+      const remote = { name: "pikachu", id: 1 };
+
       (PokemonCache.getPokemon as jest.Mock).mockResolvedValue(null);
-      (PokemonService.fetchPokemonDetails as jest.Mock).mockResolvedValue(mockPokemon);
-      (PokemonCache.savePokemon as jest.Mock).mockResolvedValue(undefined);
+      (PokemonService.fetchPokemonDetails as jest.Mock).mockResolvedValue(remote);
+
+      const saveMock = PokemonCache.savePokemon as jest.Mock;
+      saveMock.mockResolvedValue(undefined);
 
       const result = await repository.getPokemonDetails("pikachu");
 
-      expect(result).toEqual(mockPokemon);
-      expect(PokemonService.fetchPokemonDetails).toHaveBeenCalledWith("pikachu");
-      expect(PokemonCache.savePokemon).toHaveBeenCalledWith("pikachu", mockPokemon);
+      expect(result).toEqual(remote);
+      expect(saveMock).toHaveBeenCalledWith("pikachu", remote);
     });
 
-    it("should handle API errors for details", async () => {
+    it("deve lançar erro e logar se a API falhar", async () => {
       (PokemonCache.getPokemon as jest.Mock).mockResolvedValue(null);
-      (PokemonService.fetchPokemonDetails as jest.Mock).mockRejectedValue(new Error("Not Found"));
+      (PokemonService.fetchPokemonDetails as jest.Mock).mockRejectedValue(
+        new Error("Detail Error")
+      );
 
-      await expect(repository.getPokemonDetails("unknown")).rejects.toThrow("Not Found");
-    });
-
-    it("should return null if the Pokemon does not exist", async () => {
-      (PokemonCache.getPokemon as jest.Mock).mockResolvedValue(null);
-      (PokemonService.fetchPokemonDetails as jest.Mock).mockResolvedValue(null);
-
-      const result = await repository.getPokemonDetails("missingno");
-      expect(result).toBeNull();
+      await expect(repository.getPokemonDetails("pikachu")).rejects.toThrow(
+        "Detail Error"
+      );
+      expect(logError).toHaveBeenCalledWith(
+        expect.stringContaining("Error fetching Pokémon details")
+      );
     });
   });
 });

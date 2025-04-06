@@ -1,6 +1,6 @@
 import "reflect-metadata";
 import { PokemonUseCase } from "src/domain/usecase/PokemonUseCase";
-import { IPokemonRepository } from "src/data/repository/IPokemonRepository";
+import type { IPokemonRepository } from "src/data/repository/IPokemonRepository";
 import { logError } from "src/util/log";
 import { Pokemon } from "src/domain/model/Pokemon";
 
@@ -9,63 +9,56 @@ jest.mock("src/util/log", () => ({
 }));
 
 describe("PokemonUseCase", () => {
-  let pokemonUseCase: PokemonUseCase;
-  let mockRepository: jest.Mocked<IPokemonRepository>;
+  let mockRepo: jest.Mocked<IPokemonRepository>;
+  let useCase: PokemonUseCase;
 
   beforeEach(() => {
-    mockRepository = {
+    mockRepo = {
       getPokemons: jest.fn(),
       getPokemonDetails: jest.fn(),
-    } as jest.Mocked<IPokemonRepository>;
+    };
 
-    pokemonUseCase = new PokemonUseCase(mockRepository as jest.Mocked<IPokemonRepository>);
+    useCase = new PokemonUseCase(mockRepo);
+  });
+
+  afterEach(() => {
+    jest.clearAllMocks();
   });
 
   describe("fetch", () => {
-    it("should return a list of pokemons successfully", async () => {
-      const mockPokemons: Pokemon[] = [
-        { name: "Pikachu", image: "pikachu.png" } as Pokemon,
-        { name: "Charmander", image: "charmander.png" } as Pokemon,
-      ];
-      mockRepository.getPokemons.mockResolvedValue(mockPokemons);
+    it("deve retornar pokémons do repositório", async () => {
+      const pokemons: Pokemon[] = [{ name: "pikachu", id: 1 } as Pokemon];
+      mockRepo.getPokemons.mockResolvedValue(pokemons);
 
-      const result = await pokemonUseCase.fetch(151);
+      const result = await useCase.fetch();
 
-      expect(result).toEqual(mockPokemons);
-      expect(mockRepository.getPokemons).toHaveBeenCalledWith(151);
+      expect(result).toEqual(pokemons);
+      expect(mockRepo.getPokemons).toHaveBeenCalledTimes(1);
     });
 
-    it("should log an error and throw when repository fails", async () => {
-      const error = new Error("Network error");
-      mockRepository.getPokemons.mockRejectedValue(error);
+    it("deve logar e lançar erro se o repositório falhar", async () => {
+      mockRepo.getPokemons.mockRejectedValue(new Error("Repo error"));
 
-      await expect(pokemonUseCase.fetch()).rejects.toThrow("Failed to fetch pokemons");
+      await expect(useCase.fetch()).rejects.toThrow("Failed to fetch pokemons");
       expect(logError).toHaveBeenCalledWith(expect.stringContaining("Error in PokemonUseCase.fetch"));
     });
   });
 
   describe("details", () => {
-    it("should return pokemon details successfully", async () => {
-      const mockPokemon: Pokemon = {
-        name: "Pikachu",
-        image: "pikachu.png",
-        height: 4,
-        weight: 60,
-        types: ["electric"],
-      } as Pokemon;
-      mockRepository.getPokemonDetails.mockResolvedValue(mockPokemon);
+    it("deve retornar detalhes de um pokémon", async () => {
+      const details = { name: "pikachu", id: 1 } as Pokemon;
+      mockRepo.getPokemonDetails.mockResolvedValue(details);
 
-      const result = await pokemonUseCase.details("Pikachu");
+      const result = await useCase.details("pikachu");
 
-      expect(result).toEqual(mockPokemon);
-      expect(mockRepository.getPokemonDetails).toHaveBeenCalledWith("Pikachu");
+      expect(result).toEqual(details);
+      expect(mockRepo.getPokemonDetails).toHaveBeenCalledWith("pikachu");
     });
 
-    it("should log an error and throw when repository fails", async () => {
-      const error = new Error("Not Found");
-      mockRepository.getPokemonDetails.mockRejectedValue(error);
+    it("deve logar e lançar erro se o repositório falhar", async () => {
+      mockRepo.getPokemonDetails.mockRejectedValue(new Error("Detail error"));
 
-      await expect(pokemonUseCase.details("Unknown")).rejects.toThrow("Failed to fetch details for Unknown");
+      await expect(useCase.details("pikachu")).rejects.toThrow("Failed to fetch details for pikachu");
       expect(logError).toHaveBeenCalledWith(expect.stringContaining("Error in PokemonUseCase.details"));
     });
   });

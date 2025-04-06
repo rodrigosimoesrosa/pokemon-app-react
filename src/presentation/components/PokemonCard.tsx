@@ -3,6 +3,7 @@ import { View, Text, Image, StyleSheet, TouchableOpacity, ImageBackground, Dimen
 import { useNavigation } from "@react-navigation/native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { Pokemon } from "src/domain/model/Pokemon";
+import { getPokemonFormattedId } from "src/domain/usecase/PokemonConfig";
 const { width, height } = Dimensions.get("window");
 
 type PokemonCardProp = {
@@ -19,7 +20,7 @@ const PokemonCard: React.FC<PokemonCardProp> = ({ pokemon }) => {
               <Image source={{uri: pokemon.image}} style={styles.pokemon} />
           </ImageBackground>
           <View style={styles.title}>
-            <Text style={styles.name}>{getId(pokemon.url)}</Text>
+            <Text style={styles.name}>{getPokemonFormattedId(pokemon.id)}</Text>
             <Text style={styles.name}>{pokemon.name}</Text>
           </View>
         </View>
@@ -31,16 +32,11 @@ const PokemonCard: React.FC<PokemonCardProp> = ({ pokemon }) => {
     <TouchableOpacity onPress={() => navigation.navigate("Details", pokemon)}>
       <View style={styles.card}>
         <Image source={require("assets/images/placeholder.jpg")} style={styles.background}/>
-        <Text style={styles.name}>{getId(pokemon.url)}</Text>
+        <Text style={styles.name}>{getPokemonFormattedId(pokemon.id)}</Text>
       </View>
     </TouchableOpacity>
   );
 };
-
-const getId = (url: string | undefined): string => {
-  if (!url) return "#0";
-  return `#${parseInt(url.split("/")[6])}`;
-}
 
 const styles = StyleSheet.create({
   title: {

@@ -1,6 +1,6 @@
 import "reflect-metadata";
 import { inject, injectable } from "inversify";
-import { IPokemonRepository } from "src/data/repository/IPokemonRepository";
+import type { IPokemonRepository } from "src/data/repository/IPokemonRepository";
 import { TYPES } from "src/di/type";
 import { Pokemon } from "src/domain/model/Pokemon";
 import { logError } from "src/util/log";
@@ -15,9 +15,9 @@ export class PokemonUseCase {
     this.repository = repo;
   }
 
-  fetch = async (limit: number = 151): Promise<Pokemon[]> => {
+  fetch = async (): Promise<Pokemon[]> => {
     try {
-      return await this.repository.getPokemons(limit);
+      return await this.repository.getPokemons();
     } catch (error) {
       logError(`Error in PokemonUseCase.fetch: ${error}`);
       throw new Error('Failed to fetch pokemons');

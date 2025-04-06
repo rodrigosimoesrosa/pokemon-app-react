@@ -1,6 +1,10 @@
 import { PokemonService } from "src/data/network/PokemonService";
 import { logError } from "src/util/log";
 
+jest.mock("expo", () => ({
+  registerRootComponent: jest.fn(),
+}));
+
 jest.mock("src/util/log", () => ({
   logError: jest.fn(),
 }));

@@ -1,5 +1,48 @@
+import 'react-native';
+import "reflect-metadata";
 import '@testing-library/jest-native/extend-expect';
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import "@testing-library/jest-native/legacy-extend-expect";
+
+import "reflect-metadata";
+
+jest.mock("expo", () => ({
+  registerRootComponent: jest.fn(),
+}));
+
+jest.mock("react-native/Libraries/EventEmitter/NativeEventEmitter");
+
+/*jest.mock('react-native/Libraries/vendor/emitter/EventEmitter', () => {
+  return {
+    default: {
+      addListener: jest.fn(),
+      removeListener: jest.fn(),
+      emit: jest.fn()
+    }
+  };
+});*/
+
+jest.mock('@react-navigation/native', () => ({
+  ...jest.requireActual('@react-navigation/native'),
+  useNavigation: () => ({ navigate: jest.fn() }),
+  useRoute: () => ({ params: {} }),
+}));
+
+// Mock para NativeAnimatedHelper
+//jest.mock('react-native/Libraries/Animated/NativeAnimatedHelper');
+
+// Mock para React Navigation
+jest.mock('@react-navigation/native', () => ({
+  ...jest.requireActual('@react-navigation/native'),
+  useNavigation: () => ({ navigate: jest.fn() }),
+  useRoute: () => ({ params: {} })
+}));
+
+jest.mock('@react-navigation/stack', () => ({
+  createStackNavigator: jest.fn(() => ({
+    Navigator: jest.fn(({ children }) => children),
+    Screen: jest.fn(),
+  })),
+}));
 
 jest.mock("@react-native-async-storage/async-storage", () => ({
   setItem: jest.fn(() => Promise.resolve()),
@@ -8,7 +51,6 @@ jest.mock("@react-native-async-storage/async-storage", () => ({
   clear: jest.fn(() => Promise.resolve()),
 }));
 
-import 'react-native-gesture-handler/jestSetup';
 
 jest.mock('react-native-gesture-handler', () => {
   const { View } = require('react-native');

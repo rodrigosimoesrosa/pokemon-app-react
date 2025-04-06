@@ -1,10 +1,35 @@
-import { PokemonRepository } from "src/data/repository/PokemonRepository";
+import "reflect-metadata";
+import { inject, injectable } from "inversify";
+import { IPokemonRepository } from "src/data/repository/IPokemonRepository";
+import { TYPES } from "src/di/type";
+import { Pokemon } from "src/domain/model/Pokemon";
+import { logError } from "src/util/log";
 
-export const PokemonsUseCase = {
-  fetch: async () => {
-    return await PokemonRepository.getPokemons();
-  },
-  details: async (name: string) => {
-    return await PokemonRepository.getPokemonDetails(name);
+@injectable()
+export class PokemonUseCase {
+  private repository: IPokemonRepository;
+  constructor(
+    @inject(TYPES.IPokemonRepository) 
+    repo: IPokemonRepository
+  ) {
+    this.repository = repo;
   }
-};
+
+  fetch = async (limit: number = 151): Promise<Pokemon[]> => {
+    try {
+      return await this.repository.getPokemons(limit);
+    } catch (error) {
+      logError(`Error in PokemonUseCase.fetch: ${error}`);
+      throw new Error('Failed to fetch pokemons');
+    }
+  };
+
+  details = async (name: string): Promise<Pokemon> => {
+    try {
+      return await this.repository.getPokemonDetails(name);
+    } catch (error) {
+      logError(`Error in PokemonUseCase.details: ${error}`);
+      throw new Error(`Failed to fetch details for ${name}`);
+    }
+  };
+}

@@ -1,7 +1,7 @@
 import React, { useEffect, useLayoutEffect, useState } from "react";
 import { View, Text, Image, StyleSheet, Dimensions, ActivityIndicator, ImageBackground } from "react-native";
-import { PokemonsUseCase } from "src/domain/usecase/PokemonUseCase";
 import { useNavigation } from "@react-navigation/native";
+import usePokemonStore from "src/store/pokemonStore";
 const { width, height } = Dimensions.get("window");
 
 
@@ -9,25 +9,22 @@ const DetailsScreen = ({ route }: any) => {
   const navigation = useNavigation();
 
   const { name } = route.params;
+  const { fetchPokemonDetails } = usePokemonStore((state) => state);
+  
   const [pokemon, setPokemon] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchDetails = async () => {
-      const data = await PokemonsUseCase.details(name);
+    const fetch = async () => {
+      const data = await fetchPokemonDetails(name);
       setPokemon(data);
       setLoading(false);
     };
-    fetchDetails();
-  }, [name]);
+    fetch();
+  }, [name, fetchPokemonDetails]);
 
   useLayoutEffect(() => {
-      navigation.setOptions({
-        title: 'Pokemon Details',
-        headerStyle: { backgroundColor: '#FF3D3D' },
-        headerTintColor: '#fff',
-        headerTitleStyle: { fontWeight: 'bold', fontSize: 24 },
-      });
+      navigation.setOptions(styles.headerStyle);
     }, [navigation]);
 
   if (loading) {
@@ -101,6 +98,12 @@ const styles = StyleSheet.create({
     textShadowOffset: { width: 1, height: 1 },
     textShadowRadius: 2,
   },
+  headerStyle: {
+    title: 'Pokemon Details',
+    headerStyle: { backgroundColor: '#FF3D3D' },
+    headerTintColor: '#fff',
+    headerTitleStyle: { fontWeight: 'bold', fontSize: 24 },
+  } as Partial<object>,
 });
 
 export default DetailsScreen;

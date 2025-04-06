@@ -2,6 +2,25 @@
   "extends": "expo/tsconfig.base",
   "compilerOptions": {
     "baseUrl": "./",
-    "strict": true
-  }
+    "paths": {
+      "src/*": ["src/*"]
+    },
+    "target": "esnext",
+    "module": "esnext",
+    "lib": ["dom", "esnext"],
+    "allowJs": true,
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "strict": true,
+    "forceConsistentCasingInFileNames": true,
+    "noEmit": true,
+    "isolatedModules": true,
+    "moduleResolution": "node",
+    "resolveJsonModule": true,
+    "jsx": "react-native",
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true
+  },
+  "include": ["src", "App.tsx", "index.ts"]
 }

@@ -1,11 +1,16 @@
+import "reflect-metadata";
+import { injectable } from "inversify";
 import { PokemonCache } from "src/data/cache/PokemonCache";
 import { PokemonService } from "src/data/network/PokemonService";
+import { IPokemonRepository } from "src/data/repository/IPokemonRepository";
 
-export const PokemonRepository = {
-  getPokemons: async (limit: number = 151) => {
+@injectable()
+export class PokemonRepository implements IPokemonRepository {
+    
+  getPokemons = async (limit: number = 151) => {
     let localPokemons = await PokemonCache.getPokemons() || {};
     let remotePokemons = await PokemonService.fetchPokemons(limit) || [];
-
+    
     remotePokemons.forEach((pokemon) => {
       let cachedPokemon = localPokemons[pokemon.name];
       if (cachedPokemon) {
@@ -17,9 +22,9 @@ export const PokemonRepository = {
     });
     
     return remotePokemons;
-  },
+  };
 
-  getPokemonDetails: async (name: string) => {
+  getPokemonDetails = async (name: string) => {
     const localPokemon = await PokemonCache.getPokemon(name);
     if (localPokemon) return localPokemon;
 
@@ -28,6 +33,6 @@ export const PokemonRepository = {
       await PokemonCache.savePokemon(name, remotePokemon);
     }
     
-    return remotePokemon
-  }
-};
+    return remotePokemon;
+  };
+}

@@ -1,47 +1,34 @@
-import React, { useCallback, useLayoutEffect, useMemo, useState } from "react";
+import React, { useCallback, useLayoutEffect, useMemo } from "react";
 import { FlatList, SafeAreaView, StyleSheet, View } from "react-native";
-import PokemonCard from "../components/PokemonCard";
-import { PokemonsUseCase } from "src/domain/usecase/PokemonUseCase";
+import PokemonCard from "src/presentation/components/PokemonCard";
 import { Pokemon } from "src/domain/model/Pokemon";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient";
+import usePokemonStore from "src/store/pokemonStore";
 
 const HomeScreen = () => {
   const navigation = useNavigation();
-  const [pokemons, setPokemons] = useState<Pokemon[]>([]);
+  const { fetchPokemons, pokemons } = usePokemonStore((state) => state);
 
-  useFocusEffect(
-    useCallback(() => {
-      const fetchData = async () => {
-        const data = await PokemonsUseCase.fetch();
-        setPokemons(data);
-      };
-      fetchData();
-    }, [])
-  );
+  useFocusEffect(useCallback(() => { fetchPokemons() }, [fetchPokemons]));
 
   useLayoutEffect(() => {
-    navigation.setOptions({
-      title: 'Pokedex',
-      headerStyle: { backgroundColor: '#FF3D3D' },
-      headerTintColor: '#fff',
-      headerTitleStyle: { fontWeight: 'bold', fontSize: 24 },
-    });
+    navigation.setOptions(styles.headerStyle);
   }, [navigation]);
 
-  const adjustedPokemons = useMemo(() => {
-    const result = [...pokemons];
+  const memoPokemons = useMemo(() => {
+    const values = [...pokemons];
     if (pokemons.length % 2 !== 0) {
-      result.push({ name: "empty-placeholder" } as Pokemon);
+      values.push({ name: "empty-placeholder" } as Pokemon);
     }
-    return result;
+    return values;
   }, [pokemons]);
 
   return (
     <SafeAreaView style={styles.container}>
        <LinearGradient colors={["#38B6FF", "#FF3D3D"]} style={styles.gradient}>
         <FlatList
-          data={adjustedPokemons}
+          data={memoPokemons}
           keyExtractor={(item, index) => `${item.name}-${index}`}
           numColumns={2}
           columnWrapperStyle={styles.row}
@@ -78,6 +65,12 @@ const styles = StyleSheet.create({
   hidden: {
     backgroundColor: "transparent",
   },
+  headerStyle: {
+    title: 'Pokedex',
+    headerStyle: { backgroundColor: '#FF3D3D' },
+    headerTintColor: '#fff',
+    headerTitleStyle: { fontWeight: 'bold', fontSize: 24 },
+  } as Partial<object>,
 });
 
 export default HomeScreen;

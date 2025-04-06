@@ -2,6 +2,10 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { PokemonCache } from "src/data/cache/PokemonCache";
 import { logError } from "src/util/log";
 
+jest.mock("expo", () => ({
+  registerRootComponent: jest.fn(),
+}));
+
 jest.mock("@react-native-async-storage/async-storage");
 jest.mock("src/util/log", () => ({
   logError: jest.fn(),

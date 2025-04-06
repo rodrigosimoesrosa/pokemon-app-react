@@ -8,10 +8,20 @@ const Stack = createStackNavigator();
 
 const AppNavigator = () => (
   <NavigationContainer>
-    <Stack.Navigator>
-      <Stack.Screen name="Home" component={HomeScreen} />
-      <Stack.Screen name="Details" component={DetailsScreen} />
-    </Stack.Navigator>
+    <Stack.Navigator
+    screenOptions={{
+      animation: 'fade_from_bottom',
+    }}
+  >
+    <Stack.Screen name="Home" component={HomeScreen} />
+    <Stack.Screen
+      name="Details"
+      component={DetailsScreen}
+      options={{
+        animation: 'slide_from_right',
+      }}
+    />
+  </Stack.Navigator>
   </NavigationContainer>
 );
 

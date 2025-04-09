@@ -1,125 +1,97 @@
 import "reflect-metadata";
-import { PokemonRepository } from "../src/data/repository/PokemonRepository";
-import { PokemonCache } from "../src/data/cache/PokemonCache";
-import { PokemonService } from "../src/data/network/PokemonService";
-import { getPokemonGeneration, getPokemonId } from "../src/domain/usecase/PokemonConfig";
-import { logError } from "../src/util/log";
+import { PokemonRepository } from "src/data/repository/PokemonRepository";
+import { IPokemonRemoteDataSource } from "src/data/remote/IPokemonRemoteDataSource";
+import { IPokemonLocalDataSource } from "src/data/local/IPokemonLocalDataSource";
+import { Pokemon } from "src/domain/model/Pokemon";
+import { logError } from "src/util/log";
 
-jest.mock("src/data/cache/PokemonCache");
-jest.mock("src/data/network/PokemonService");
-jest.mock("src/domain/usecase/PokemonConfig", () => ({
-  getPokemonId: jest.fn(),
-  getPokemonGeneration: jest.fn(),
-  TOTAL: 3, // mocka TOTAL com um número baixo para teste
+jest.mock("src/util/log", () => ({
+  logError: jest.fn(),
 }));
-jest.mock("src/util/log");
+
+const mockRemote: jest.Mocked<IPokemonRemoteDataSource> = {
+  fetchPokemons: jest.fn(),
+  fetchPokemonDetails: jest.fn(),
+};
+
+const mockLocal: jest.Mocked<IPokemonLocalDataSource> = {
+  getPokemons: jest.fn(),
+  getPokemon: jest.fn(),
+  savePokemon: jest.fn(),
+};
 
 describe("PokemonRepository", () => {
-  const repository = new PokemonRepository();
+  let repository: PokemonRepository;
 
-  afterEach(() => {
+  beforeEach(() => {
+    repository = new PokemonRepository(mockRemote, mockLocal);
     jest.clearAllMocks();
   });
 
   describe("getPokemons", () => {
-    it("deve retornar os pokemons combinando cache com dados da API", async () => {
+    it("deve retornar a lista de pokémons combinando cache local e remoto", async () => {
       const remote = [
-        { name: "pikachu", url: "url1" },
-        { name: "bulbasaur", url: "url2" },
+        { name: "bulbasaur", url: "https://pokeapi.co/api/v2/pokemon/1/" },
       ];
-
-      const cache = {
-        pikachu: {
-          image: "img1",
-          height: 10,
-          weight: 20,
-          types: ["electric"],
+      const local = {
+        bulbasaur: {
+          name: "bulbasaur",
+          image: "img.png",
+          height: 7,
+          weight: 69,
+          types: ["grass", "poison"],
         },
       };
 
-      (PokemonCache.getPokemons as jest.Mock).mockResolvedValue(cache);
-      (PokemonService.fetchPokemons as jest.Mock).mockResolvedValue(remote);
-      (getPokemonId as jest.Mock).mockImplementation((url: string) =>
-        url === "url1" ? 1 : 2
-      );
-      (getPokemonGeneration as jest.Mock).mockImplementation((id: number) =>
-        id === 1 ? 1 : 1
-      );
+      mockRemote.fetchPokemons.mockResolvedValue(remote as any);
+      mockLocal.getPokemons.mockResolvedValue(local);
 
       const result = await repository.getPokemons();
 
-      expect(result).toHaveLength(2);
-
-      expect(result[0]).toMatchObject({
-        name: "pikachu",
-        image: "img1",
-        height: 10,
-        weight: 20,
-        types: ["electric"],
-        id: 1,
-        generation: 1,
-      });
-
-      expect(result[1]).toMatchObject({
-        name: "bulbasaur",
-        id: 2,
-        generation: 1,
-      });
+      expect(result).toHaveLength(1);
+      expect(result[0].name).toBe("bulbasaur");
+      expect(result[0].image).toBe("img.png");
+      expect(mockRemote.fetchPokemons).toHaveBeenCalled();
+      expect(mockLocal.getPokemons).toHaveBeenCalled();
     });
 
-    it("deve lançar erro e logar quando falhar", async () => {
-      (PokemonService.fetchPokemons as jest.Mock).mockRejectedValue(
-        new Error("API Error")
-      );
+    it("deve logar erro e lançar exceção em caso de falha", async () => {
+      mockRemote.fetchPokemons.mockRejectedValue(new Error("Falha"));
 
-      await expect(repository.getPokemons()).rejects.toThrow(
-        "Failed to fetch pokemons"
-      );
-
-      expect(logError).toHaveBeenCalledWith(
-        expect.stringContaining("Error in getPokemons")
-      );
+      await expect(repository.getPokemons()).rejects.toThrow("Failed to fetch pokemons");
+      expect(logError).toHaveBeenCalledWith(expect.stringContaining("Error in getPokemons"));
     });
   });
 
   describe("getPokemonDetails", () => {
-    it("deve retornar detalhes do cache se disponíveis", async () => {
-      const cached = { name: "pikachu", id: 1 };
-      (PokemonCache.getPokemon as jest.Mock).mockResolvedValue(cached);
+    it("deve retornar o pokémon do cache local se existir", async () => {
+      const localPokemon = { name: "pikachu", id: 25 } as Pokemon;
+      mockLocal.getPokemon.mockResolvedValue(localPokemon);
 
       const result = await repository.getPokemonDetails("pikachu");
 
-      expect(result).toEqual(cached);
-      expect(PokemonService.fetchPokemonDetails).not.toHaveBeenCalled();
+      expect(result).toEqual(localPokemon);
+      expect(mockLocal.getPokemon).toHaveBeenCalledWith("pikachu");
+      expect(mockRemote.fetchPokemonDetails).not.toHaveBeenCalled();
     });
 
-    it("deve buscar detalhes da API e salvar no cache se não houver no cache", async () => {
-      const remote = { name: "pikachu", id: 1 };
+    it("deve buscar remotamente e salvar no cache se não estiver em cache", async () => {
+      const remotePokemon = { name: "charmander", id: 4 } as Pokemon;
+      mockLocal.getPokemon.mockResolvedValue(null);
+      mockRemote.fetchPokemonDetails.mockResolvedValue(remotePokemon);
 
-      (PokemonCache.getPokemon as jest.Mock).mockResolvedValue(null);
-      (PokemonService.fetchPokemonDetails as jest.Mock).mockResolvedValue(remote);
+      const result = await repository.getPokemonDetails("charmander");
 
-      const saveMock = PokemonCache.savePokemon as jest.Mock;
-      saveMock.mockResolvedValue(undefined);
-
-      const result = await repository.getPokemonDetails("pikachu");
-
-      expect(result).toEqual(remote);
-      expect(saveMock).toHaveBeenCalledWith("pikachu", remote);
+      expect(result).toEqual(remotePokemon);
+      expect(mockRemote.fetchPokemonDetails).toHaveBeenCalledWith("charmander");
+      expect(mockLocal.savePokemon).toHaveBeenCalledWith("charmander", remotePokemon);
     });
 
-    it("deve lançar erro e logar se a API falhar", async () => {
-      (PokemonCache.getPokemon as jest.Mock).mockResolvedValue(null);
-      (PokemonService.fetchPokemonDetails as jest.Mock).mockRejectedValue(
-        new Error("Detail Error")
-      );
+    it("deve logar e lançar erro em caso de falha", async () => {
+      mockLocal.getPokemon.mockRejectedValue(new Error("Erro local"));
 
-      await expect(repository.getPokemonDetails("pikachu")).rejects.toThrow(
-        "Detail Error"
-      );
-      expect(logError).toHaveBeenCalledWith(
-        expect.stringContaining("Error fetching Pokémon details")
-      );
+      await expect(repository.getPokemonDetails("meowth")).rejects.toThrow("Erro local");
+      expect(logError).toHaveBeenCalledWith(expect.stringContaining("Error fetching Pokémon details"));
     });
   });
 });

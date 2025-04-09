@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "PokemonApp-React",
-    "slug": "PokemonApp-React",
+    "name": "Pokedex",
+    "slug": "pokedex",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -31,8 +31,9 @@
     },
     "extra": {
       "eas": {
-        "projectId": "bd6bc249-7ae0-46d3-9acb-f50462eaecf6"
+        "projectId": "3d3867e8-46b3-4931-9c2f-cb5f1b897e88"
       }
-    }
+    },
+    "owner": "rodrigosrosa"
   }
 }

@@ -1,5 +1,5 @@
 import React, { useEffect, useLayoutEffect, useState } from "react";
-import { View, Text, Image, StyleSheet, Dimensions, ActivityIndicator, ImageBackground } from "react-native";
+import { View, Text, Image, StyleSheet, Dimensions, StatusBar, ActivityIndicator, ImageBackground } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import usePokemonStore from "src/store/pokemonStore";
 const { width, height } = Dimensions.get("window");
@@ -29,14 +29,18 @@ const DetailsScreen = ({ route }: any) => {
 
   if (loading) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#FF0000" />
+      <View style={styles.container}>
+        <StatusBar backgroundColor="#FF3D3D" barStyle="light-content" />
+        <ImageBackground source={require("assets/images/placeholder.jpg")} style={styles.background}>
+          <ActivityIndicator size="large" color="#FF0000" style={styles.pokemon} />
+        </ImageBackground>
       </View>
     );
   }
 
   if (pokemon) {
     return <View style={styles.container}>
+        <StatusBar backgroundColor="#FF3D3D" barStyle="light-content" />
         <ImageBackground source={require("assets/images/placeholder.jpg")} style={styles.background}>
           <Image source={{uri: pokemon.image}} style={styles.pokemon} />
         </ImageBackground>
@@ -87,6 +91,7 @@ const styles = StyleSheet.create({
   },
   loadingContainer: {
     flex: 1,
+    backgroundColor: "#38B6FF", // 🔥 Azul vibrante no fundo
     justifyContent: "center",
     alignItems: "center",
   },

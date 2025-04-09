@@ -9,16 +9,16 @@ const Stack = createStackNavigator();
 const AppNavigator = () => (
   <NavigationContainer>
     <Stack.Navigator
-    screenOptions={{
-      animation: 'fade_from_bottom',
-    }}
-  >
+      screenOptions={{
+        animation: 'slide_from_right'
+      }}
+    >
     <Stack.Screen name="Home" component={HomeScreen} />
     <Stack.Screen
       name="Details"
       component={DetailsScreen}
       options={{
-        animation: 'slide_from_right',
+        animation: 'slide_from_right'
       }}
     />
   </Stack.Navigator>

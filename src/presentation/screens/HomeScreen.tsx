@@ -1,14 +1,15 @@
-import React, { useCallback, useLayoutEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useState } from "react";
 import {
   FlatList,
   SafeAreaView,
   StyleSheet,
   View,
   TextInput,
+  StatusBar
 } from "react-native";
 import PokemonCard from "src/presentation/components/PokemonCard";
 import { Pokemon } from "src/domain/model/Pokemon";
-import { useFocusEffect, useNavigation } from "@react-navigation/native";
+import { useNavigation } from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient";
 import usePokemonStore from "src/store/pokemonStore";
 import { generationRanges } from "src/domain/usecase/PokemonConfig";
@@ -51,7 +52,7 @@ const HomeScreen = () => {
   const [typeFilter, setTypeFilter] = useState<string>("all");
   const [searchText, setSearchText] = useState("");
 
-  useFocusEffect(
+  useEffect(
     useCallback(() => {
       fetchPokemons();
     }, [fetchPokemons])
@@ -76,6 +77,7 @@ const HomeScreen = () => {
 
   return (
     <SafeAreaView style={styles.container}>
+      <StatusBar backgroundColor="#FF3D3D" barStyle="light-content" />
       <LinearGradient colors={["#38B6FF", "#FF3D3D"]} style={styles.gradient}>
         <View style={styles.filterWrapper}>
           <TextInput

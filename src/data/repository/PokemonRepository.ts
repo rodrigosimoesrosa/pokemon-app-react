@@ -1,19 +1,26 @@
 import "reflect-metadata";
-import { injectable } from "inversify";
-import { PokemonCache } from "src/data/cache/PokemonCache";
-import { PokemonService } from "src/data/network/PokemonService";
+import { inject, injectable } from "inversify";
 import { IPokemonRepository } from "src/data/repository/IPokemonRepository";
+import type { IPokemonRemoteDataSource } from "src/data/remote/IPokemonRemoteDataSource";
+import type { IPokemonLocalDataSource } from "src/data/local/IPokemonLocalDataSource";
 import { logError } from "src/util/log";
 import { Pokemon } from "src/domain/model/Pokemon";
 import { getPokemonGeneration, getPokemonId, TOTAL } from "src/domain/usecase/PokemonConfig";
+import { TYPES } from "src/di/type";
 
 @injectable()
 export class PokemonRepository implements IPokemonRepository {
-    
+  constructor(
+    @inject(TYPES.IPokemonRemoteDataSource)
+    private remoteDataSource: IPokemonRemoteDataSource,
+    @inject(TYPES.IPokemonLocalDataSource)
+    private localDataSource: IPokemonLocalDataSource
+  ) {}
+
   getPokemons = async (): Promise<Pokemon[]> => {
     try {
-      const localPokemons = (await PokemonCache.getPokemons()) || {};
-      const remotePokemons = (await PokemonService.fetchPokemons(TOTAL)) || [];
+      const localPokemons = (await this.localDataSource.getPokemons()) || {};
+      const remotePokemons = (await this.remoteDataSource.fetchPokemons(TOTAL)) || [];
 
       return remotePokemons.map((pokemon) => {
         const id = getPokemonId(pokemon.url);
@@ -42,13 +49,13 @@ export class PokemonRepository implements IPokemonRepository {
     }
   };
 
-  getPokemonDetails = async (name: string) => {
+  getPokemonDetails = async (name: string): Promise<Pokemon | null> => {
     try {
-      const local = await PokemonCache.getPokemon(name);
+      const local = await this.localDataSource.getPokemon(name);
       if (local) return local;
   
-      const remote = await PokemonService.fetchPokemonDetails(name);
-      if (remote) await PokemonCache.savePokemon(name, remote);
+      const remote = await this.remoteDataSource.fetchPokemonDetails(name);
+      if (remote) await this.localDataSource.savePokemon(name, remote);
       
       return remote;
     } catch (error) {

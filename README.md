@@ -52,6 +52,9 @@ Contributions are welcome! If you'd like to contribute to this project, please f
 
 6. **Open a pull request**.
 
+7. **Image**
+![Pokémon App React](assets/print.jpeg)
+
 ## License
 
 This project is licensed under the MIT License. See the LICENSE file for more details.
